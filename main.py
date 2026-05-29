@@ -1,5 +1,6 @@
 import requests
 import os
+import time
 
 # =========================
 # LARK CONFIG
@@ -129,7 +130,8 @@ for record in records:
             "Market Value": market_value,
             "Cost Basis": cost_basis,
             "Unrealized PnL": unrealized_pnl,
-            "Unrealized PnL %": unrealized_pnl_percent
+            "Unrealized PnL %": unrealized_pnl_percent,
+            "Last Update Time": int(time.time() * 1000)
         }
     }
 
