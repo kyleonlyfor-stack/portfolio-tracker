@@ -1,7 +1,6 @@
 import requests
 import os
 
-
 # =========================
 # LARK CONFIG
 # =========================
@@ -11,12 +10,6 @@ APP_SECRET = os.getenv("APP_SECRET")
 APP_TOKEN = os.getenv("APP_TOKEN")
 TABLE_ID = os.getenv("TABLE_ID")
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY")
-
-# =========================
-# FINNHUB CONFIG
-# =========================
-
-FINNHUB_API_KEY = "d8cd689r01qidic7eqi0d8cd689r01qidic7eqig"
 
 # =========================
 # GET LARK ACCESS TOKEN
@@ -98,11 +91,29 @@ for record in records:
     current_price = quote_data.get("c")
 
     # 如果价格为空
-    if current_price is None:
+    if current_price is None or current_price == 0:
         print(f"{ticker} 获取价格失败")
         continue
 
     print(f"{ticker} 当前价格: {current_price}")
+
+    # =========================
+    # CALCULATE
+    # =========================
+
+    shares = float(fields.get("Shares", 0))
+    avg_cost = float(fields.get("Avg Cost", 0))
+
+    market_value = round(current_price * shares, 2)
+
+    cost_basis = round(avg_cost * shares, 2)
+
+    unrealized_pnl = round(market_value - cost_basis, 2)
+
+    if cost_basis != 0:
+        unrealized_pnl_percent = round(unrealized_pnl / cost_basis, 4)
+    else:
+        unrealized_pnl_percent = 0
 
     # =========================
     # UPDATE RECORD
@@ -114,6 +125,26 @@ for record in records:
 
     update_payload = {
         "fields": {
-            "Current Price": current_price
+            "Current Price": current_price,
+            "Market Value": market_value,
+            "Cost Basis": cost_basis,
+            "Unrealized PnL": unrealized_pnl,
+            "Unrealized PnL %": unrealized_pnl_percent
         }
     }
+
+    update_response = requests.put(
+        update_url,
+        headers=headers,
+        json=update_payload
+    )
+
+    print("Update Response:")
+    print(update_response.json())
+
+    if update_response.json().get("code") == 0:
+        print(f"{ticker} 更新成功")
+    else:
+        print(f"{ticker} 更新失败")
+
+print("全部更新完成")
